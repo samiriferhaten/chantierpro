@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ChantierPro - Notes & Photos de Chantier</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+  <style>
+    body { background-color: #0f172a; color: #f8fafc; font-family: system-ui, -apple-system, sans-serif; }
+    .btn-touch { min-height: 54px; }
+  </style>
+</head>
+<body class="max-w-md mx-auto min-h-screen flex flex-col justify-between pb-6 relative">
+
+  <!-- Header -->
+  <header class="p-4 bg-slate-900 border-b border-slate-800 flex justify-between items-center sticky top-0 z-40">
+    <div class="flex items-center space-x-2">
+      <div class="w-9 h-9 bg-amber-500 rounded-lg flex items-center justify-center text-slate-950 font-bold text-xl">
+        <i class="fa-solid fa-helmet-safety"></i>
+      </div>
+      <div>
+        <span class="font-bold text-lg tracking-wide text-white">Chantier<span class="text-amber-500">Pro</span></span>
+        <span class="block text-[10px] text-slate-400 uppercase tracking-widest font-semibold">Mémo de Chantier</span>
+      </div>
+    </div>
+    <div id="creditBadge" class="text-xs font-semibold px-2.5 py-1 bg-amber-500/10 text-amber-400 rounded-full border border-amber-500/20">
+      Tests : <span id="creditsLeft">Illimité</span>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="p-4 space-y-5 flex-1">
+
+    <!-- Infos Artisan (Pour l'envoi automatique du mémo) -->
+    <section class="bg-slate-900/80 p-4 rounded-xl border border-slate-800 space-y-3">
+      <h2 class="text-xs font-bold uppercase tracking-wider text-amber-500 flex items-center gap-2">
+        <i class="fa-solid fa-user-gear"></i> Vos Coordonnées (Artisan)
+      </h2>
+      <div>
+        <input type="email" id="artisanEmail" placeholder="Votre e-mail pro (ex: contact@artisan.fr)" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-3 text-sm focus:outline-none focus:border-amber-500 text-white">
+        <p class="text-[10px] text-slate-400 mt-1">Le mémo vous sera envoyé automatiquement sur cette adresse.</p>
+      </div>
+    </section>
+
+    <!-- Infos Chantier / Client -->
+    <section class="bg-slate-900/80 p-4 rounded-xl border border-slate-800 space-y-3">
+      <h2 class="text-xs font-bold uppercase tracking-wider text-amber-500 flex items-center gap-2">
+        <i class="fa-solid fa-id-card"></i> Client & Localisation
+      </h2>
+      <div class="space-y-2">
+        <input type="text" id="clientName" placeholder="Nom du client (ex: M. Martin)" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-3 text-sm focus:outline-none focus:border-amber-500 text-white">
+        <input type="tel" id="clientPhone" placeholder="Téléphone client (ex: 06 12 34 56 78)" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-3 text-sm focus:outline-none focus:border-amber-500 text-white">
+        <input type="email" id="clientEmail" placeholder="E-mail client (optionnel)" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-3 text-sm focus:outline-none focus:border-amber-500 text-white">
+        <input type="text" id="clientAddress" placeholder="Adresse de facturation" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-3 text-sm focus:outline-none focus:border-amber-500 text-white">
+        <input type="text" id="jobSiteAddress" placeholder="📍 Adresse exacte du chantier (si différente)" class="w-full bg-slate-950 border border-amber-500/50 rounded-lg p-3 text-sm focus:outline-none focus:border-amber-500 text-white">
+      </div>
+    </section>
+
+    <!-- Notes vocales et observations -->
+    <section class="bg-slate-900/80 p-4 rounded-xl border border-slate-800 space-y-3">
+      <div class="flex justify-between items-center">
+        <h2 class="text-xs font-bold uppercase tracking-wider text-amber-500 flex items-center gap-2">
+          <i class="fa-solid fa-microphone-lines"></i> Notes & Relevés Vocaux
+        </h2>
+        <button id="btnVoice" type="button" class="px-3 py-1.5 bg-amber-500/20 text-amber-400 border border-amber-500/40 rounded-full text-xs font-semibold flex items-center gap-1.5 active:scale-95 transition">
+          <i class="fa-solid fa-microphone"></i> Dicter
+        </button>
+      </div>
+      <p id="voiceStatus" class="text-[11px] text-amber-400 hidden"></p>
+      <textarea id="workNotes" rows="4" placeholder="Dictez ou notez tout en vrac : côtes, matériel spécifique, difficultés d'accès, attentes du client..." class="w-full bg-slate-950 border border-slate-700 rounded-lg p-3 text-sm focus:outline-none focus:border-amber-500 text-white"></textarea>
+    </section>
+
+    <!-- Photos de repérage (4 photos) -->
+    <section class="bg-slate-900/80 p-4 rounded-xl border border-slate-800 space-y-3">
+      <h2 class="text-xs font-bold uppercase tracking-wider text-amber-500 flex items-center gap-2">
+        <i class="fa-solid fa-camera-retro"></i> Photos de Repérage (4 max)
+      </h2>
+      <p class="text-[11px] text-slate-400">Prenez en photo la zone, les détails, les références, etc.</p>
+      
+      <div class="grid grid-cols-2 gap-3">
+        <label class="flex flex-col items-center justify-center h-24 bg-slate-950 border border-dashed border-slate-700 rounded-lg cursor-pointer overflow-hidden relative" id="containerPhoto1">
+          <i class="fa-solid fa-camera text-slate-500 text-lg mb-1"></i>
+          <span class="text-[11px] text-slate-400">Photo 1</span>
+          <input type="file" accept="image/*" capture="environment" id="photo1" class="hidden" onchange="previewImage(this, 'containerPhoto1', 1)">
+        </label>
+        <label class="flex flex-col items-center justify-center h-24 bg-slate-950 border border-dashed border-slate-700 rounded-lg cursor-pointer overflow-hidden relative" id="containerPhoto2">
+          <i class="fa-solid fa-camera text-slate-500 text-lg mb-1"></i>
+          <span class="text-[11px] text-slate-400">Photo 2</span>
+          <input type="file" accept="image/*" capture="environment" id="photo2" class="hidden" onchange="previewImage(this, 'containerPhoto2', 2)">
+        </label>
+        <label class="flex flex-col items-center justify-center h-24 bg-slate-950 border border-dashed border-slate-700 rounded-lg cursor-pointer overflow-hidden relative" id="containerPhoto3">
+          <i class="fa-solid fa-camera text-slate-500 text-lg mb-1"></i>
+          <span class="text-[11px] text-slate-400">Photo 3</span>
+          <input type="file" accept="image/*" capture="environment" id="photo3" class="hidden" onchange="previewImage(this, 'containerPhoto3', 3)">
+        </label>
+        <label class="flex flex-col items-center justify-center h-24 bg-slate-950 border border-dashed border-slate-700 rounded-lg cursor-pointer overflow-hidden relative" id="containerPhoto4">
+          <i class="fa-solid fa-camera text-slate-500 text-lg mb-1"></i>
+          <span class="text-[11px] text-slate-400">Photo 4</span>
+          <input type="file" accept="image/*" capture="environment" id="photo4" class="hidden" onchange="previewImage(this, 'containerPhoto4', 4)">
+        </label>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Bouton d'action -->
+  <footer class="px-4 space-y-2">
+    <button onclick="handleGenerateMemo()" class="w-full btn-touch bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-amber-500/20 text-base transition">
+      <i class="fa-solid fa-file-arrow-down"></i> Enregistrer & Envoyer le Mémo (PDF)
+    </button>
+  </footer>
+
+  <script>
+    // --- GESTION DES CRÉDITS ET LOCALSTORAGE ---
+    const MAX_FREE_MEMOS = 999;
+    let photoData = { 1: null, 2: null, 3: null, 4: null };
+
+    const artisanEmailInput = document.getElementById('artisanEmail');
+    const savedArtisanEmail = localStorage.getItem('chantierpro_artisan_email');
+    if (savedArtisanEmail) artisanEmailInput.value = savedArtisanEmail;
+
+    artisanEmailInput.addEventListener('input', (e) => {
+      localStorage.setItem('chantierpro_artisan_email', e.target.value);
+    });
+
+    function handleGenerateMemo() {
+      generatePDFMemo();
+    }
+
+    // --- PHOTOS AVEC COMPRESSION ---
+    function previewImage(input, containerId, photoNum) {
+      const file = input.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          const img = new Image();
+          img.onload = function() {
+            const canvas = document.createElement('canvas');
+            const maxWidth = 800;
+            const scale = Math.min(1, maxWidth / img.width);
+            canvas.width = img.width * scale;
+            canvas.height = img.height * scale;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.7);
+            
+            photoData[photoNum] = compressedDataUrl;
+            const container = document.getElementById(containerId);
+            container.innerHTML = `<img src="${compressedDataUrl}" class="w-full h-full object-cover rounded-lg">`;
+          };
+          img.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+      }
+    }
+
+    // --- DICTÉE VOCALE STABILISÉE ---
+    const btnVoice = document.getElementById('btnVoice');
+    const workNotes = document.getElementById('workNotes');
+    const voiceStatus = document.getElementById('voiceStatus');
+
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+    if (SpeechRecognition) {
+      const recognition = new SpeechRecognition();
+      recognition.lang = 'fr-FR';
+      recognition.interimResults = true;
+      recognition.continuous = true;
+      
+      let isListening = false;
+      let finalTranscript = '';
+
+      if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+        navigator.mediaDevices.getUserMedia({ 
+          audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } 
+        }).catch(() => {});
+      }
+
+      btnVoice.addEventListener('click', () => {
+        if (isListening) {
+          recognition.stop();
+          return;
+        }
+        try {
+          finalTranscript = '';
+          recognition.start();
+          isListening = true;
+          voiceStatus.classList.add('hidden');
+          btnVoice.classList.add('animate-pulse', 'bg-red-500/20', 'text-red-400', 'border-red-500/40');
+          btnVoice.innerHTML = `<i class="fa-solid fa-stop"></i> Écoute...`;
+        } catch (err) {
+          voiceStatus.innerText = "Erreur de démarrage du micro.";
+          voiceStatus.classList.remove('hidden');
+        }
+      });
+
+      recognition.onresult = (event) => {
+        let interimTranscript = '';
+        for (let i = event.resultIndex; i < event.results.length; ++i) {
+          if (event.results[i].isFinal) {
+            finalTranscript += event.results[i][0].transcript + ' ';
+          } else {
+            interimTranscript += event.results[i][0].transcript;
+          }
+        }
+        if (finalTranscript) {
+          workNotes.value += (workNotes.value && !workNotes.value.endsWith(' ') ? ' ' : '') + finalTranscript.trim();
+          finalTranscript = '';
+        }
+      };
+
+      recognition.onerror = (event) => {
+        voiceStatus.classList.remove('hidden');
+        if (event.error === 'not-allowed') {
+          voiceStatus.innerText = "Accès au micro bloqué.";
+        }
+      };
+
+      recognition.onend = () => {
+        if (finalTranscript.trim()) {
+          workNotes.value += (workNotes.value && !workNotes.value.endsWith(' ') ? ' ' : '') + finalTranscript.trim();
+          finalTranscript = '';
+        }
+        isListening = false;
+        btnVoice.classList.remove('animate-pulse', 'bg-red-500/20', 'text-red-400', 'border-red-500/40');
+        btnVoice.innerHTML = `<i class="fa-solid fa-microphone"></i> Dicter`;
+      };
+    } else {
+      btnVoice.addEventListener('click', () => {
+        voiceStatus.innerText = "Navigateur non compatible.";
+        voiceStatus.classList.remove('hidden');
+      });
+    }
+
+    // --- GÉNÉRATION DU PDF ET ENVOI SERVEUR EN ARRIÈRE-PLAN ---
+    function generatePDFMemo() {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+
+      const artisanEmail = document.getElementById('artisanEmail').value || '';
+      const clientName = document.getElementById('clientName').value || 'Client non renseigné';
+      const clientPhone = document.getElementById('clientPhone').value || 'Non renseigné';
+      const clientEmail = document.getElementById('clientEmail').value || 'Non renseigné';
+      const clientAddress = document.getElementById('clientAddress').value || 'Non renseignée';
+      const jobSiteAddress = document.getElementById('jobSiteAddress').value || clientAddress;
+      const notes = document.getElementById('workNotes').value || 'Aucune note dictée';
+
+      doc.setFillColor(15, 23, 42);
+      doc.rect(0, 0, 210, 42, 'F');
+      
+      doc.setTextColor(245, 158, 11);
+      doc.setFontSize(20);
+      doc.setFont(undefined, 'bold');
+      doc.text("MÉMO DE CHANTIER", 14, 23);
+      
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(10);
+      doc.setFont(undefined, 'normal');
+      doc.text(`Date : ${new Date().toLocaleDateString('fr-FR')}`, 150, 23);
+
+      doc.setTextColor(15, 23, 42);
+      doc.setFontSize(11);
+      doc.setFont(undefined, 'bold');
+      doc.text("Coordonnées & Localisation :", 14, 52);
+      doc.setFont(undefined, 'normal');
+      doc.text(`Client : ${clientName}`, 14, 59);
+      doc.text(`Contact : Tél : ${clientPhone} | E-mail : ${clientEmail}`, 14, 66);
+      doc.text(`Adresse facturation : ${clientAddress}`, 14, 73);
+      doc.text(`Adresse chantier : ${jobSiteAddress}`, 14, 80);
+
+      doc.setFont(undefined, 'bold');
+      doc.text("Relevés et notes de terrain :", 14, 94);
+      doc.setFont(undefined, 'normal');
+      const splitNotes = doc.splitTextToSize(notes, 180);
+      doc.text(splitNotes, 14, 102);
+
+      let yPos = 102 + (splitNotes.length * 7) + 10;
+
+      let activePhotos = [photoData[1], photoData[2], photoData[3], photoData[4]].filter(Boolean);
+      if (activePhotos.length > 0) {
+        if (yPos > 180) {
+          doc.addPage();
+          yPos = 20;
+        }
+        doc.setFont(undefined, 'bold');
+        doc.text(`Photos de repérage (${activePhotos.length}) :`, 14, yPos);
+        yPos += 6;
+
+        activePhotos.forEach((photo, index) => {
+          if (yPos > 220) {
+            doc.addPage();
+            yPos = 20;
+          }
+          let xPos = (index % 2 === 0) ? 14 : 105;
+          if (index > 0 && index % 2 === 0) yPos += 65;
+          
+          doc.addImage(photo, 'JPEG', xPos, yPos, 85, 60);
+        });
+        yPos += 70;
+      }
+
+      doc.setFontSize(9);
+      doc.setFont(undefined, 'italic');
+      doc.setTextColor(100, 100, 100);
+      doc.text("Mémo généré depuis ChantierPro - Aide à la préparation de devis.", 14, Math.min(285, yPos));
+
+      // 1. Sauvegarde locale de sécurité sur le téléphone
+      const filename = `Memo_Chantier_${clientName.replace(/\s+/g, '_')}.pdf`;
+      doc.save(filename);
+
+      // 2. Envoi automatique en arrière-plan via Netlify Functions & Brevo
+      if (artisanEmail) {
+        const pdfBase64 = doc.output('datauristring').split(',')[1];
+
+        fetch('/.netlify/functions/send-memo', {
+          method: 'POST',
+          body: JSON.stringify({
+            artisanEmail,
+            clientName,
+            jobSiteAddress,
+            notes,
+            pdfBase64
+          })
+        })
+        .then(response => response.json())
+        .then(data => {
+          if (data.success) {
+            alert("✅ Mémo et PDF envoyés automatiquement sur votre boîte e-mail !");
+          } else {
+            alert("⚠️ PDF téléchargé sur le téléphone, mais échec de l'envoi de l'e-mail automatique.");
+          }
+        })
+        .catch(err => {
+          console.error(err);
+        });
+      } else {
+        alert("Mémo téléchargé ! Pensez à renseigner votre e-mail artisan en haut pour l'envoi automatique.");
+      }
+    }
+  </script>
+</body>
+</html>
